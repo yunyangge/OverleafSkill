@@ -18,6 +18,7 @@ a{color:#17664d}nav a,.download{padding:8px 12px;border:1px solid var(--line);bo
 label{cursor:pointer;margin:8px}details{border:1px solid var(--line);border-radius:12px;background:white;margin:20px 0;overflow:hidden}
 summary{padding:18px;cursor:pointer;font-weight:600;overflow-wrap:anywhere}.meta{padding:0 18px 14px;color:var(--muted);overflow-wrap:anywhere;font:12px ui-monospace,monospace}
 .technical{border:0;border-radius:0;margin:0}.technical summary{font-size:12px;font-weight:400;padding:0 18px 8px;color:var(--muted)}.snapshots{padding:0 18px;margin:4px 0 12px;font-size:13px}
+.change-summary{background:white;border:1px solid var(--line);border-left:4px solid #288362;border-radius:10px;padding:20px 24px;margin:16px 0}.change-summary h2{font-size:17px;margin:0 0 10px}.change-summary p{margin:0;line-height:1.8;white-space:pre-wrap;overflow-wrap:anywhere}.change-summary small{display:block;color:var(--muted);margin-top:12px;overflow-wrap:anywhere}
 .scroll{overflow-x:auto}table{width:100%;min-width:700px;table-layout:fixed;border-collapse:collapse;font:13px/1.6 ui-monospace,Consolas,monospace}
 th{background:#edf2ef;padding:9px;text-align:left}td{vertical-align:top;border-top:1px solid #edf0ee;padding:3px 8px}
 .ln{width:50px;color:#75877e;text-align:right;user-select:none}.code{white-space:pre-wrap;overflow-wrap:anywhere}
@@ -77,7 +78,23 @@ def table(left, right):
     return ''.join(rows), added, removed
 
 
-def create(root, before, after, scope, review_id=None, raw_diff=None):
+def parse_summaries(value, files):
+    """Validate agent-authored notes before any edit; never infer intent from line counts."""
+    items = json.loads(value) if value else []
+    if not isinstance(items, list) or len(items) > 20:
+        raise ValueError('summaries must be a JSON array of up to 20 change summaries')
+    for item in items:
+        if not isinstance(item, dict) or set(item) != {'files', 'location', 'summary'}:
+            raise ValueError('Each summary requires files, location and summary')
+        if not isinstance(item['files'], list) or not item['files'] or any(not isinstance(f, str) or f not in files for f in item['files']):
+            raise ValueError('Summary files must belong to this edit/review')
+        for key in ('location', 'summary'):
+            if not isinstance(item[key], str) or not item[key].strip() or len(item[key]) > 1500:
+                raise ValueError('Summary location/text must contain 1-1500 characters')
+    return items
+
+
+def create(root, before, after, scope, review_id=None, raw_diff=None, summaries=None):
     folder = Path(root) / '.git/overleaf-reviews' / uuid.uuid4().hex
     folder.mkdir(parents=True)
     files, sections, navigation, unified = [], [], [], []
@@ -116,15 +133,21 @@ def create(root, before, after, scope, review_id=None, raw_diff=None):
         count = f'+{item["added"]} / −{item["removed"]}' if item['added'] is not None else 'asset / large file'
         navigation.append(f'<a href="#file-{number}">{label} · {count}</a>')
         meta = f'{item["before_bytes"]} → {item["after_bytes"]} bytes<br>Before SHA-256: {item["before_sha256"] or "absent"}<br>After SHA-256: {item["after_sha256"] or "absent"}'
-        sections.append(f'<details open id="file-{number}"><summary>{label} · {status} · {count}</summary><details class="technical"><summary>版本信息 / Version details</summary><div class="meta">{meta}</div></details>{body}</details>')
+        sections.append(f'<details id="file-{number}"><summary>{label} · {status} · {count}</summary><details class="technical"><summary>版本信息 / Version details</summary><div class="meta">{meta}</div></details>{body}</details>')
         files.append(item)
     report = {'scope':scope,'created_at':datetime.now(timezone.utc).isoformat(),'review_id':review_id,
-              'html':str(folder/'index.html'),'diff_file':str(folder/'changes.diff'),'files':files}
+              'html':str(folder/'index.html'),'diff_file':str(folder/'changes.diff'),'files':files,
+              'summaries': summaries or [], 'summary_source': 'agent_authored' if summaries else None}
     (folder/'changes.diff').write_text(raw_diff if raw_diff is not None else '\n'.join(unified)+'\n',encoding='utf-8')
     (folder/'review.json').write_text(json.dumps(report,ensure_ascii=False,indent=2),encoding='utf-8')
     subtitle = '本次操作 / This operation' if scope == 'operation' else '全部未提交修改，相对 HEAD / All uncommitted changes versus HEAD'
     html = '<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="Content-Security-Policy" content="default-src &#39;none&#39;; style-src &#39;unsafe-inline&#39;"><title>OverleafSkill · 修改审阅</title><style>'+CSS+'</style></head><body>'
-    html += '<header><div class="brand">OVERLEAFSKILL / CHANGE REVIEW</div><h1>修改审阅 · '+str(len(files))+' 个文件</h1><p>'+subtitle+'</p><p>'+escape(report['created_at'])+' · 静态快照 / Saved snapshot</p></header><div class="layout">'
+    html += '<header><div class="brand">OVERLEAFSKILL / CHANGE REVIEW</div><h1>修改总结 / Change summary</h1><p>'+subtitle+'</p><p>'+escape(report['created_at'])+' · 静态快照 / Saved snapshot</p></header><div class="layout">'
+    for item in report['summaries']:
+        html += '<article class="change-summary"><h2>'+escape(item['location'])+'</h2><p>'+escape(item['summary'])+'</p><small>'+escape(' · '.join(item['files']))+'</small></article>'
+    if not report['summaries'] and files:
+        html += '<p class="note">未提供内容总结；可按需展开下方细节。No content summary supplied; expand details if needed.</p>'
+    html += '<p class="note">详细改动（按需展开） / Detailed changes (optional)</p>'
     if review_id:
         html += '<details class="technical"><summary>审阅版本 / Review version</summary><p class="meta">'+escape(review_id)+'</p></details>'
     html += '<a class="download" href="changes.diff" download>下载 Diff / Download</a><nav>'+''.join(navigation)+'</nav><input id="only" type="checkbox"><label for="only">只看改动行 / Changed lines only</label><main>'

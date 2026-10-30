@@ -2,6 +2,11 @@
 
 ## 2026-10-30
 
+### v1.3 content summaries
+
+- Optional structured, agent-authored summaries are persisted with patch/batch/cumulative reviews and displayed before collapsed file diffs. Tests cover escaped notes, persistence, stable content review IDs and malformed/out-of-scope notes rejected before edits.
+- Browser checks verify summary cards are visible, line tables start hidden and can be expanded, and filtering/navigation still work. Summary truthfulness depends on the editing assistant's comparison with actual changes; the server does not verify scientific meaning.
+
 ### v1.2 visual review
 
 - Per-operation patch/batch/undo previews and cumulative HEAD diffs are distinct. Tests verify preserved prior snapshots, fresh review IDs, created/deleted files, escaped source/filenames, binary/large-file fallbacks and successful edits surviving preview errors.

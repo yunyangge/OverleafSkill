@@ -54,3 +54,30 @@ class Tests(unittest.TestCase):
             result=self.project.patch('main.tex',original['sha256'],'Hello','Saved')
         self.assertIn('error',result['review'])
         self.assertIn('Saved',self.project.read('main.tex')['text'])
+
+    def test_summaries_persist_and_diffs_start_collapsed(self):
+        original = self.project.read('main.tex')
+        notes = [{'files':['main.tex'],'location':'Intro <section>','summary':'Clarify <script>context</script>.'}]
+        result = self.project.patch('main.tex',original['sha256'],'Hello','Saved',summaries=json.dumps(notes))
+        report = result['review']
+        html = Path(report['html']).read_text(encoding='utf-8')
+        self.assertEqual(report['summaries'],notes)
+        self.assertEqual(report['summary_source'],'agent_authored')
+        self.assertIn('&lt;script&gt;',html)
+        self.assertNotIn('<script>',html)
+        self.assertNotIn('<details open id="file-',html)
+        self.assertLess(html.index('<article'),html.index('<details id="file-'))
+        saved=json.loads(Path(report['html']).with_name('review.json').read_text(encoding='utf-8'))
+        self.assertEqual(saved['summaries'],notes)
+        plain=self.project.diff()['review_id']
+        self.assertEqual(self.project.diff(summaries=json.dumps(notes))['review_id'],plain)
+
+    def test_invalid_summaries_rejected_before_edits(self):
+        original=self.project.read('main.tex')
+        bad=json.dumps([{'files':['unrelated.tex'],'location':'Intro','summary':'Bad scope'}])
+        with self.assertRaises(ValueError):
+            self.project.patch('main.tex',original['sha256'],'Hello','Saved',summaries=bad)
+        with self.assertRaises(ValueError):
+            self.project.batch(json.dumps([{'operation':'create','file':'new.tex','text':'New'}]),summaries=bad)
+        self.assertEqual(self.project.read('main.tex'),original)
+        self.assertFalse((self.repo/'new.tex').exists())

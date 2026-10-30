@@ -8,7 +8,7 @@ from pathlib import Path
 import re
 import threading
 import uuid
-from review import safe_create
+from review import safe_create, parse_summaries
 
 
 def sha(data):
@@ -35,7 +35,7 @@ class Features:
         data = self.path(file).read_bytes()
         return {'file': file, 'size': len(data), 'sha256': sha(data)}
 
-    def batch(self, changes):
+    def batch(self, changes, summaries=""):
         items = json.loads(changes)
         if not isinstance(items, list) or not 1 <= len(items) <= 50:
             raise ValueError('changes must be a JSON array of 1-50 operations')
@@ -73,6 +73,7 @@ class Features:
             before[name], after[name] = old, new
         if sum(len(v or b'') for v in before.values()) + sum(len(v or b'') for v in after.values()) > 50_000_000:
             raise ValueError('Batch exceeds 50 MB')
+        notes = parse_summaries(summaries, after)
         identifier = uuid.uuid4().hex
         folder = self.root / '.git' / 'overleaf-checkpoints'
         folder.mkdir(exist_ok=True)
@@ -102,7 +103,7 @@ class Features:
             self._put(index, original_index)
             raise
         return {'checkpoint': identifier, 'files': list(after), 'sha256': receipt['after'], 'published': False,
-                'review': safe_create(self.root, before, after, 'operation')}
+                'review': safe_create(self.root, before, after, 'operation', summaries=notes)}
 
     @staticmethod
     def _put(path, value):
