@@ -133,7 +133,7 @@ Keep `origin` for Overleaf and `github` for GitHub. This is a local two-remote w
 | Python 3.10 / 3.12 CI | Passed | Passed |
 | Git, MCP, simulated cloud compilation | Passed | Passed |
 | Native session storage | DPAPI round-trip passed | Keychain backend loads; read/write routing tested with mocks |
-| Live Overleaf compilation | Original implementation verified | Not yet tested |
+| Live Overleaf compilation | v1.1 compile, PDF download and Git source comparison passed | Not yet tested |
 
 [CI results](https://github.com/yunyangge/OverleafSkill/actions/workflows/test.yml) · [Detailed validation record](VALIDATION.md)
 

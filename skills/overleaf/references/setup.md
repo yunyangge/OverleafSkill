@@ -41,12 +41,12 @@ For the `login` command, log into Overleaf in your browser. Open developer tools
 Alternatively, install the optional browser dependencies in this same Python environment:
 
 ```sh
-python -m pip install playwright
+python -m pip install playwright==1.64.1
 python -m playwright install chromium
 python scripts/manage.py --profile paper browser-login
 ```
 
-This opens an isolated, visible Chromium window. Complete login yourself (including SSO or challenges), then press Enter in the terminal. The helper validates and saves its session to OS storage and closes the isolated browser. It does not read your normal browser profile or store a persistent browser directory. It honors HTTPS_PROXY/HTTP_PROXY; website anti-bot rules may reject automated browsers. If so, use hidden-input `login`. Optional browser package versions can be pinned by the user's environment; browser login is mock-tested, not live-account verified on both systems. [Playwright authentication](https://playwright.dev/python/docs/auth).
+This opens an isolated, visible Chromium window. Complete login yourself (including SSO or challenges), then press Enter in the terminal. The helper validates and saves its session to OS storage and closes the isolated browser. It does not read your normal browser profile or store a persistent browser directory. It honors HTTPS_PROXY/HTTP_PROXY; website anti-bot rules may reject automated browsers. If so, use hidden-input `login`. The optional package version above was installed on the maintainer's Windows environment; browser login is mock-tested, not live-account verified on both systems. [Playwright authentication](https://playwright.dev/python/docs/auth).
 
 `logout` removes the local saved cookie; it does not revoke the browser/server session. Re-run login after expiry or a challenge. A Git login alone does not enable online compilation.
 

@@ -133,7 +133,7 @@ flowchart LR
 | Python 3.10 / 3.12 自动测试 | 已通过 | 已通过 |
 | Git、MCP、模拟在线编译 | 已通过 | 已通过 |
 | 原生会话存储 | DPAPI 往返验证通过 | Keychain 后端加载通过，读写路径有模拟测试 |
-| 真实 Overleaf 账号在线编译 | 已验证原始实现 | 尚未实测 |
+| 真实 Overleaf 账号在线编译 | v1.1 编译、PDF 下载及 Git 源码比对通过 | 尚未实测 |
 
 [查看 CI](https://github.com/yunyangge/OverleafSkill/actions/workflows/test.yml) · [详细验证记录（英文）](VALIDATION.md)
 

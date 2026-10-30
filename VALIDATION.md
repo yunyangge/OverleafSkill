@@ -8,6 +8,8 @@
 - Installer upgrade/restore preserves the prior installation; migration manifests exclude machine paths and credentials. Interactive browser login is tested with mocked Playwright/session storage, including authentication failure refusing to save a cookie.
 - MCP stdio smoke test enumerates 19 tools. The skill frontmatter validator passes.
 - A read-only check against the maintainer's existing authenticated Windows project verified that all 72 cloud archive files match committed Git blobs using the new comparison. No paper source or credential is distributed.
+- The installed v1.1 implementation subsequently completed an authenticated cloud compile, downloaded the PDF/log and recorded `source_verified_against_git: true` with its Git commit. Existing formatting/font warnings were returned as diagnostics; this was not a visual paper review. The source checkout was not edited or published during validation.
+- The Windows installation and existing MCP registration were upgraded with backups, preserving the project checkout and authentication. A local protocol check found all 19 tools. Playwright 1.64.1 and its Chromium browser were installed; interactive login remains mock-tested.
 - New cross-platform CI results are linked from the repository badge. Browser interaction/SSO/challenges and native macOS Keychain login still require live interactive validation; no live account is used by CI.
 - Snapshot identity is not a cloud compiler lock. Batches are not crash-atomic, locks are advisory to this implementation, and async handles are process-local. These limits are documented in the tool contract.
 
