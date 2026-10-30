@@ -1,0 +1,2 @@
+# Required only for native macOS Keychain support. Core Windows/Git MCP is stdlib.
+keyring==25.7.0; sys_platform == 'darwin'

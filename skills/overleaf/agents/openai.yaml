@@ -1,0 +1,4 @@
+interface:
+  display_name: "Overleaf"
+  short_description: "Connect, edit, sync and compile Overleaf projects"
+  default_prompt: "Use $overleaf to connect my paper, review edits, and compile it on Overleaf."
