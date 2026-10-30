@@ -8,6 +8,7 @@ from pathlib import Path
 import re
 import threading
 import uuid
+from review import safe_create
 
 
 def sha(data):
@@ -100,7 +101,8 @@ class Features:
                     self._put(p, value)
             self._put(index, original_index)
             raise
-        return {'checkpoint': identifier, 'files': list(after), 'sha256': receipt['after'], 'published': False}
+        return {'checkpoint': identifier, 'files': list(after), 'sha256': receipt['after'], 'published': False,
+                'review': safe_create(self.root, before, after, 'operation')}
 
     @staticmethod
     def _put(path, value):
@@ -125,10 +127,12 @@ class Features:
             path = self.path(name)
             if sha(path.read_bytes() if path.exists() else None) != expected:
                 raise ValueError('File changed since checkpoint: ' + name)
-        for name, data in receipt['before'].items():
-            self._put(self.path(name), base64.b64decode(data) if data is not None else None)
+        before = {name: self.path(name).read_bytes() if self.path(name).exists() else None for name in receipt['before']}
+        after = {name: base64.b64decode(data) if data is not None else None for name,data in receipt['before'].items()}
+        for name, data in after.items():
+            self._put(self.path(name), data)
         self._put(index, base64.b64decode(receipt['index']) if receipt['index'] is not None else None)
-        return {'restored': list(receipt['before'])}
+        return {'restored': list(receipt['before']), 'review': safe_create(self.root, before, after, 'operation')}
 
     def retry_push(self, expected_commit):
         if self.head() != expected_commit or self.git('status', '--porcelain').strip():

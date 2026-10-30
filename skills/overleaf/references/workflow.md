@@ -5,7 +5,7 @@
 | list_files | none | List tracked files in configured checkout |
 | read_file | file | Read UTF-8 content and SHA-256, max 2 MB |
 | patch_file | file, expected_sha256, old, new | Replace a unique exact snippet locally, preserving other bytes |
-| show_diff | none | Return tracked changes, HEAD and content-bound review_id |
+| show_diff | none | Return tracked changes, HEAD, content-bound review_id and offline visual review |
 | sync_project | none | Fetch origin and fast-forward clean checkout; refuse local changes |
 | publish_changes | review_id, message | Check review and remote HEAD, commit tracked changes, normal push to origin |
 | sync_github | expected_commit | Push clean, committed HEAD to preconfigured github remote, no force |
@@ -28,6 +28,18 @@ All inputs above are strings. Paths are project-relative with forward slashes. T
 
 Sync → read → patch → show_diff → local compile if desired → authorized publish → online compile → optional authorized GitHub sync.
 The user may authorize a whole workflow up front; do not re-request approval for already authorized publication. When they request only a draft or review, stop before publication. Preserve the paper's scientific claims and numbers unless the user specifically requests those changes.
+
+## Visual review after every edit
+
+`patch_file`, `batch_edit` and `undo_batch` return a `review` object for that operation's exact before/after bytes. `show_diff` returns a separate cumulative review of all uncommitted tracked changes relative to HEAD, including new files added through a batch. It may include pre-existing user edits: do not attribute all cumulative changes to the AI.
+
+The object includes `html` (absolute path), `diff_file`, `scope`, creation time and per-file status, line counts, sizes and SHA-256 values. Open the HTML locally in any browser: it has file navigation, collapsible sections, side-by-side line numbers, red/green changes, underlined character changes, a changed-lines-only checkbox and a diff download. No server, JavaScript or external resources are needed. If the chat client opens HTML as text, use its open-in-browser action or open the file from the file manager.
+
+After each logical editing round, provide a labeled link to `review.html` and a short summary in chat. Link the operation review as “this change”; label `show_diff` as “all uncommitted changes.” Prefer a batch for related files. Edits performed outside MCP need an explicit `show_diff` call. A report does not itself authorize publishing.
+
+Snapshots are saved independently under `.git/overleaf-reviews/<id>/index.html`; they survive commits and subsequent edits. Their links are local, not public. Reports and text snapshots can contain private paper content; do not upload them without authorization. Binary files show size/hash metadata. Text comparisons above 200 KB total or 2,000 total lines offer full before/after text downloads instead of costly inline rendering. Line counts are null for those files; operation `.diff` downloads omit large/binary content and normalize text line endings, so they are review aids, not exact restoration patches. The cumulative `show_diff` download preserves Git's actual diff. Use checkpoints for undo.
+
+Preview failure returns `review.error` without turning an already-saved edit into a reported failure. Report the edit as saved, use Git/text review, and do not repeat the edit just to regenerate its preview. Always obtain a fresh `show_diff`/review ID before publication; an old HTML page does not refresh or prove current state.
 
 ## Recovery
 

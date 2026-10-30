@@ -1,0 +1,4 @@
+\section{Introduction}
+Recent methods process each video independently.
+We introduce a memory module for long video generation.
+Our method improves consistency.

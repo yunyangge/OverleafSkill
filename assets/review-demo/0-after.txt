@@ -1,0 +1,4 @@
+\section{Experiments}
+We evaluate the method on two benchmarks.
+We report quantitative results in Table~\ref{tab:results}.
+We also ablate the shared memory module.

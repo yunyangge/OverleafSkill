@@ -1,0 +1,4 @@
+\section{Introduction}
+Recent methods process each video independently.
+We introduce a shared memory module for long video generation.
+Our method preserves temporal consistency across segments.

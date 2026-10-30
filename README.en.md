@@ -26,6 +26,7 @@ Update a paper, inspect the diff, publish to Overleaf, compile online, and sync 
 - [Quick start](#quick-start)
 - [Example requests](#example-requests)
 - [Capabilities and tools](#capabilities-and-tools)
+- [Review every edit visually](#review-every-edit-visually)
 - [How it works](#how-it-works)
 - [Platforms and validation](#platforms-and-validation)
 - [Repository guide](#repository-guide)
@@ -71,7 +72,7 @@ python scripts/manage.py --profile paper doctor
 python scripts/manage.py --profile paper auth-status
 ```
 
-`doctor` checks local MCP and file access; `auth-status` checks the website session. To reproduce a fixed code version, run `git checkout v1.1.0` before installation.
+`doctor` checks local MCP and file access; `auth-status` checks the website session. To reproduce a fixed code version, run `git checkout v1.2.0` before installation.
 
 ## Example requests
 
@@ -92,7 +93,7 @@ The assistant interprets the requested edits; the skill guides the workflow and 
 |---|---|---|
 | Read a paper | `list_files`, `read_file` | Tracked files, UTF-8 text and SHA-256 |
 | Precise edits | `patch_file` | Stale-version check and unique exact-text replacement; local only |
-| Review changes | `show_diff` | Diff and content-bound review ID |
+| Visual review | `show_diff` | Local side-by-side HTML, file statistics and content-bound review ID |
 | Overleaf sync | `sync_project`, `publish_changes` | Pull or publish; refuse publication when the remote has new commits |
 | GitHub sync | `sync_github` | Push committed HEAD without force |
 | Local compile | `compile_project` | Optional Tectonic; log and PDF |
@@ -104,9 +105,22 @@ The assistant interprets the requested edits; the skill guides the workflow and 
 | Search and references | `search_project`, `check_references` | Line-numbered literal search and missing citation/input/include heuristics |
 | Async compile | `start_online_compile`, `compile_status` | Immediate job ID, polling and structured diagnostics |
 
-**v1.1 exposes 19 MCP tools.** Cloud source is compared against committed Git blobs before and after compilation; mismatches stop the attempt or mark its result unsuccessful. MCP processes coordinate with a checkout lock. The installer supports backup upgrades and restore, and project metadata can be exported for re-authentication on another computer.
+**v1.2 exposes 19 MCP tools.** Editing tools automatically return visual review pages. Cloud source is compared against committed Git blobs before and after compilation; mismatches stop the attempt or mark its result unsuccessful. MCP processes coordinate with a checkout lock. The installer supports backup upgrades and restore, and project metadata can be exported for re-authentication on another computer.
 
 See the [tool contract](skills/overleaf/references/workflow.md) for parameters, recovery and result semantics.
+
+## Review every edit visually
+
+Patches, batch edits and undo automatically save individual review pages. The assistant shares a **“Review this change”** link and a short summary. `show_diff` separately reviews all uncommitted changes versus HEAD, with an explicit scope label.
+
+![Side-by-side review with file navigation, highlighted changes, line numbers and changed-lines filter](assets/review-preview.png)
+
+- Side-by-side views, red removals, green additions, underlined character changes, file links and collapsible sections.
+- Show only changed lines; download the diff or full before/after text.
+- Separate snapshots survive subsequent edits and commits.
+- Offline HTML opens in Windows/macOS browsers without a server or extra dependencies; paper content is not uploaded automatically.
+
+Binary assets display sizes/hashes; large text files provide before/after downloads. Edits made through other tools need an explicit `show_diff` call. Pages are saved snapshots; publishing still uses a fresh review ID. [Example HTML source](assets/review-demo/index.html) · [Detailed behavior](skills/overleaf/references/workflow.md#visual-review-after-every-edit)
 
 ## How it works
 

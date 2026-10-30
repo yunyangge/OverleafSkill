@@ -7,6 +7,7 @@
 - `credentials.py`: Windows current-user DPAPI or explicitly selected macOS Keychain backend; no token in command arguments and no plaintext fallback.
 - `manage.py`: portable setup, session import, generic client configuration, optional Codex registration, diagnosis, GitHub remote setup.
 - `features.py`: checkout locks, recoverable batches/checkpoints, push retries, status/search/reference helpers and asynchronous compile handles.
+- `review.py`: escaped, offline HTML before/after snapshots, line/character highlighting, diff and text downloads; immutable per-operation reports under `.git`.
 - `browser_login.py`: optional isolated interactive Playwright login; credential storage is delegated to credentials.py.
 - `migration.py`: versioned project-ID-only manifests; no credential or machine-path export.
 - Root `install_skill.py`: staged install, upgrade backup and restore; does not alter project state.

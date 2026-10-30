@@ -26,6 +26,7 @@ Windows · macOS · Python 3.10+ · Skill + MCP
 - [快速开始](#快速开始)
 - [你可以这样使用](#你可以这样使用)
 - [功能与工具](#功能与工具)
+- [每次修改都方便看 Diff](#每次修改都方便看-diff)
 - [工作原理](#工作原理)
 - [平台与验证](#平台与验证)
 - [仓库导航](#仓库导航)
@@ -71,7 +72,7 @@ python scripts/manage.py --profile paper doctor
 python scripts/manage.py --profile paper auth-status
 ```
 
-`doctor` 检查本地 MCP 和文件访问；`auth-status` 检查网页登录。要复现固定代码版本，可在安装前执行 `git checkout v1.1.0`。
+`doctor` 检查本地 MCP 和文件访问；`auth-status` 检查网页登录。要复现固定代码版本，可在安装前执行 `git checkout v1.2.0`。
 
 ## 你可以这样使用
 
@@ -92,7 +93,7 @@ python scripts/manage.py --profile paper auth-status
 |---|---|---|
 | 读取论文 | `list_files`、`read_file` | 列出已跟踪文件，读取文本及 SHA-256 |
 | 精确修改 | `patch_file` | 校验旧版本，替换唯一原文片段，修改保留在本地 |
-| 检查差异 | `show_diff` | 查看改动并生成与当前内容绑定的 review ID |
+| 可视化审阅 | `show_diff` | 返回左右对照的本地 HTML、文件统计和与当前内容绑定的 review ID |
 | Overleaf 同步 | `sync_project`、`publish_changes` | 拉取或发布；远端有新提交时停止发布 |
 | GitHub 同步 | `sync_github` | 推送已提交版本，不强制覆盖远端 |
 | 本地编译 | `compile_project` | 使用可选的 Tectonic，返回日志和 PDF |
@@ -104,9 +105,22 @@ python scripts/manage.py --profile paper auth-status
 | 搜索与引用检查 | `search_project`、`check_references` | 带行号搜索、缺失引用键和 input/include 文件检查 |
 | 异步编译 | `start_online_compile`、`compile_status` | 立即返回任务 ID，可轮询结果与结构化诊断 |
 
-**v1.1 共 19 个 MCP 工具。** 在线编译前后都会将云端源文件与 Git 提交比对；不一致时停止或将本次结果标为失败。各 MCP 进程使用同一项目锁，减少并发操作冲突。安装器支持备份升级与回退，项目元数据可导出后在另一台电脑重新认证连接。
+**v1.2 共 19 个 MCP 工具。** 编辑工具自动返回可视化审阅页。在线编译前后都会将云端源文件与 Git 提交比对；不一致时停止或将本次结果标为失败。各 MCP 进程使用同一项目锁，减少并发操作冲突。安装器支持备份升级与回退，项目元数据可导出后在另一台电脑重新认证连接。
 
 输入参数、错误恢复和编译结果含义见[工具契约（英文）](skills/overleaf/references/workflow.md)。
+
+## 每次修改都方便看 Diff
+
+修改、批量编辑和撤销会自动生成独立审阅页，助手会在回复中附上 **“查看本次修改”** 链接和简短摘要。`show_diff` 则展示相对 HEAD 的全部未提交修改，两种范围明确区分。
+
+![左右对照审阅页：文件导航、增删高亮、行号和只看改动行](assets/review-preview.png)
+
+- 左右对照、红删绿增、行内变化下划线、文件跳转与折叠。
+- 一键只看改动行；下载 Diff 或完整前后文本。
+- 每次操作独立留档，后续修改与提交不会覆盖旧快照。
+- 本地 HTML，Windows/macOS 浏览器直接打开，不需要服务或额外依赖；不会自动上传论文内容。
+
+图片等二进制资源展示大小与哈希；较大文本提供前后文件下载。通过其他编辑工具修改后，需要调用 `show_diff` 生成审阅页。页面是静态快照，发布仍使用新获取的 review ID。[示例页面源码](assets/review-demo/index.html) · [详细行为](skills/overleaf/references/workflow.md#visual-review-after-every-edit)
 
 ## 工作原理
 

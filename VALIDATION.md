@@ -2,6 +2,12 @@
 
 ## 2026-10-30
 
+### v1.2 visual review
+
+- Per-operation patch/batch/undo previews and cumulative HEAD diffs are distinct. Tests verify preserved prior snapshots, fresh review IDs, created/deleted files, escaped source/filenames, binary/large-file fallbacks and successful edits surviving preview errors.
+- Windows Python 3.10: 41 tests completed, with 2 platform/optional-compiler skips. Offline Chromium rendering was inspected; changed-lines filtering and file navigation were exercised. Demo files contain synthetic paper text only.
+- Review reports remain under the project's `.git` directory and do not alter tracked content. This feature does not implement Overleaf's website review panel or intercept arbitrary external-editor changes.
+
 ### v1.1 additions
 
 - Windows Python 3.10: checkpoint undo, batch prevalidation/rollback, path alias rejection, binary asset hashes, file create/delete publication, failed-push retry, lock contention, Git/cloud mismatch preflight, asynchronous compile completion, search and diagnostic parsing are covered by isolated tests.
