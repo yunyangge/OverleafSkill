@@ -109,13 +109,23 @@ def main():
     setup.add_argument("--project", required=True)
     setup.add_argument("--repo", required=True)
     setup.add_argument("--compiler", help="Optional Tectonic executable")
-    for name in ("login", "logout", "doctor", "mcp-config", "register-codex", "auth-status", "compile-online"):
+    for name in ("login", "browser-login", "logout", "doctor", "mcp-config", "register-codex", "auth-status", "compile-online"):
         sub.add_parser(name)
+    exporting = sub.add_parser('export-profile')
+    exporting.add_argument('--output', required=True)
+    importing = sub.add_parser('import-profile')
+    importing.add_argument('--manifest', required=True)
+    importing.add_argument('--repo', required=True)
+    importing.add_argument('--compiler')
     github = sub.add_parser("github", help="Add an existing GitHub repository as a second remote; does not push")
     github.add_argument("--url", required=True)
     args = parser.parse_args()
     validate_profile(args.profile)
     if args.command == "init":
+        return init(args)
+    if args.command == 'import-profile':
+        from migration import read
+        args.project = read(args.manifest)
         return init(args)
     if args.command == "logout":
         delete_cookie(args.profile)
@@ -125,7 +135,13 @@ def main():
         print(json.dumps({"mcpServers": {"overleaf-" + args.profile: mcp_config(args.profile)}}, indent=2))
         return
     config = read_config(args.profile)
-    if args.command == "login":
+    if args.command == 'export-profile':
+        from migration import export
+        print(export(config, args.output))
+    elif args.command == 'browser-login':
+        from browser_login import login
+        login(config['online_project_id'], args.profile)
+    elif args.command == "login":
         print("Log into www.overleaf.com in your browser. Open DevTools > Network, reload /project,")
         print("select its request and copy Request Headers > Cookie (value only). Do not paste it into chat.")
         cookie = getpass.getpass("Cookie (hidden): ").strip()
@@ -147,9 +163,10 @@ def main():
             git(config["repo"], "remote", "add", "github", args.url)
         print("GitHub remote configured. No files uploaded.")
     else:
-        from server import Project
+        from server import Project, project_lock
         project = Project(config)
-        result = project.online_status() if args.command == "auth-status" else project.online_compile()
+        with project_lock(project.root):
+            result = project.online_status() if args.command == "auth-status" else project.online_compile()
         result.pop("log", None)
         print(json.dumps(result, indent=2))
 

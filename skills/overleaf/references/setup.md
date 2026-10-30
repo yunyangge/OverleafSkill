@@ -27,7 +27,7 @@ Configuration locations:
 | macOS | `~/Library/Application Support/OverleafSkill/<profile>.json` | native Keychain service `OverleafSkill.www.overleaf.com` |
 
 Fields: `repo` (absolute checkout path), `online_project_id`, `session_profile`, optional `compiler` (absolute Tectonic executable).
-Multiple profiles use separate MCP process names and configurations. Use only one active server per checkout; the server serializes its own requests but does not lock out external editors/processes.
+Multiple profiles use separate MCP process names and configurations. Prefer one server per checkout; MCP processes share a per-checkout lock, but external editors/Git and website collaborators are not locked.
 
 ## Website authentication (online compile only)
 
@@ -36,7 +36,17 @@ python scripts/manage.py --profile paper login
 python scripts/manage.py --profile paper auth-status
 ```
 
-Log into Overleaf in your browser. Open developer tools → Network; reload the project-list page; select its request and copy the **Cookie request header value**. Paste into the terminal's hidden prompt. This is a manual session import, not automatic browser login. The script verifies CSRF access and saves the cookie with OS protection; no plaintext fallback exists. On macOS, approve the native Keychain prompt if shown. A locked/unavailable keychain is an error, not a reason to store plaintext.
+For the `login` command, log into Overleaf in your browser. Open developer tools → Network; reload the project-list page; select its request and copy the **Cookie request header value**. Paste into the terminal's hidden prompt. The script verifies CSRF access and saves the cookie with OS protection; no plaintext fallback exists. On macOS, approve the native Keychain prompt if shown. A locked/unavailable keychain is an error, not a reason to store plaintext.
+
+Alternatively, install the optional browser dependencies in this same Python environment:
+
+```sh
+python -m pip install playwright
+python -m playwright install chromium
+python scripts/manage.py --profile paper browser-login
+```
+
+This opens an isolated, visible Chromium window. Complete login yourself (including SSO or challenges), then press Enter in the terminal. The helper validates and saves its session to OS storage and closes the isolated browser. It does not read your normal browser profile or store a persistent browser directory. It honors HTTPS_PROXY/HTTP_PROXY; website anti-bot rules may reject automated browsers. If so, use hidden-input `login`. Optional browser package versions can be pinned by the user's environment; browser login is mock-tested, not live-account verified on both systems. [Playwright authentication](https://playwright.dev/python/docs/auth).
 
 `logout` removes the local saved cookie; it does not revoke the browser/server session. Re-run login after expiry or a challenge. A Git login alone does not enable online compilation.
 
@@ -71,6 +81,26 @@ Use `--public` only when public publication was requested. GitHub authentication
 ## Network and proxies
 
 Inherit the user's known HTTP_PROXY/HTTPS_PROXY/NO_PROXY settings, or add them to the client's MCP server environment. Do not guess a proxy port or overwrite OS/global settings. Proxy values in public examples must be placeholders, not the maintainer's actual setup. Keep localhost direct if used for other services.
+
+## Upgrade, rollback and migration
+
+From this repository's root:
+
+```sh
+python install_skill.py --upgrade
+python install_skill.py --restore /absolute/path/to/overleaf-backup-ID
+```
+
+Upgrade stages a new copy, preserves the current skill in the printed backup directory and swaps the installation. Restore also backs up the current version. Configurations, source checkouts and credentials are outside the skill and are not modified. Use the same `--dest` when using a custom installation directory. Restart the registered MCP process to load new code; if it points at another script directory, update that registration explicitly.
+
+From the installed skill directory, transfer project metadata between Windows and macOS:
+
+```sh
+python scripts/manage.py --profile paper export-profile --output /absolute/path/to/paper.json
+python scripts/manage.py --profile paper import-profile --manifest /absolute/path/to/paper.json --repo /new/computer/paper
+```
+
+The manifest contains only a format version and project ID. Treat project identifiers as private metadata; it contains no credentials, absolute machine paths, source, GitHub destination or compiler executable. Authenticate Git on the destination computer, import to a new profile, then log into the website and register MCP there. Reconfigure the optional compiler and GitHub remote with their destination-machine settings. Windows DPAPI data cannot be migrated to macOS Keychain.
 
 ## Troubleshooting
 

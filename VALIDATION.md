@@ -2,6 +2,17 @@
 
 ## 2026-10-30
 
+### v1.1 additions
+
+- Windows Python 3.10: checkpoint undo, batch prevalidation/rollback, path alias rejection, binary asset hashes, file create/delete publication, failed-push retry, lock contention, Git/cloud mismatch preflight, asynchronous compile completion, search and diagnostic parsing are covered by isolated tests.
+- Installer upgrade/restore preserves the prior installation; migration manifests exclude machine paths and credentials. Interactive browser login is tested with mocked Playwright/session storage, including authentication failure refusing to save a cookie.
+- MCP stdio smoke test enumerates 19 tools. The skill frontmatter validator passes.
+- A read-only check against the maintainer's existing authenticated Windows project verified that all 72 cloud archive files match committed Git blobs using the new comparison. No paper source or credential is distributed.
+- New cross-platform CI results are linked from the repository badge. Browser interaction/SSO/challenges and native macOS Keychain login still require live interactive validation; no live account is used by CI.
+- Snapshot identity is not a cloud compiler lock. Batches are not crash-atomic, locks are advisory to this implementation, and async handles are process-local. These limits are documented in the tool contract.
+
+### Original release evidence
+
 - The original Windows implementation completed a real authenticated Overleaf cloud compilation and downloaded its PDF and log. No paper source is included here.
 - The portable release retains that compilation adapter and adds per-profile OS-backed sessions, a portable CLI, installer and reproducible tests.
 - Windows Python 3.10: local Git operations, stale-read/review rejection, remote update rejection, MCP handshake and simulated compilation are tested. DPAPI encryption/decryption uses the real OS API.

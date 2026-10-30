@@ -12,6 +12,15 @@
 | compile_project | file | Local Tectonic compilation; return log and PDF path |
 | online_auth_status | none | Validate saved website session |
 | compile_overleaf | none | Cloud compile using current Overleaf root/compiler settings; download log/PDF |
+| file_info | file | SHA-256 and byte size, including binary assets |
+| batch_edit | changes | JSON-encoded array of up to 50 edits; checkpoint before writing |
+| undo_batch | checkpoint | Restore batch if HEAD, affected files and index still match |
+| retry_publish | expected_commit | Retry normal push of clean committed HEAD; refuse divergence |
+| project_status | none | Fetch remote ahead/behind counts, local changes, session and latest receipt |
+| search_project | query | Literal text search, line numbers, up to 200 matches |
+| check_references | none | Heuristic missing citation keys and input/include paths |
+| start_online_compile | none | Start background compile in this process; return job_id |
+| compile_status | job_id | Return running/completed/failed state and available result |
 
 All inputs above are strings. Paths are project-relative with forward slashes. The server exposes the tools over MCP protocol 2025-03-26, newline-delimited stdio JSON-RPC. One server handles one project; use separate profiles/registrations for more projects.
 
@@ -26,17 +35,39 @@ The user may authorize a whole workflow up front; do not re-request approval for
 - Ambiguous text: include more context. Avoid whole-section replacement based on a partial read.
 - Stale review: inspect the new diff. The review ID includes HEAD and tracked-file bytes.
 - Remote changes: all remote divergence blocks publish, even nonoverlapping edits. Review and merge/rebase locally under task authorization; the tool intentionally does not choose a conflict resolution.
-- Push failure after commit: the commit stays local. Inspect status and remote history; retry the normal push only after reconciling. Do not repeat a write just because upload failed.
-- Multi-file edits: patches are separate local operations, not a transaction. Review combined diff before publishing. A failed later patch does not undo earlier patches.
+- Push failure after commit: the commit stays local. Inspect status and remote history, then call `retry_publish` with that exact commit. It only fast-forwards, treats an already-present commit as success, and refuses divergence. A fresh reviewed `publish_changes` on a clean checkout can also retry. Do not repeat edits because upload failed.
+- Batch failure: all paths/hashes/content are checked before writing. Ordinary failures restore files still equal to this operation's writes and restore its index snapshot. A crash can leave partial changes; inspect `.git/overleaf-checkpoints` locally. Do not automatically replay or discard a partial batch.
+
+## Batch and asset editing
+
+`changes` is a JSON **string** containing an array, for example:
+
+```json
+[
+  {"operation":"patch","file":"main.tex","expected_sha256":"HASH_FROM_READ_FILE","old":"unique old text","new":"new text"},
+  {"operation":"create","file":"sections/new.tex","text":"New section"},
+  {"operation":"create","file":"figures/icon.png","base64":"BASE64_FILE_BYTES"}
+]
+```
+
+Use `file_info` for the hash of an existing binary asset. `replace` accepts `text` or `base64`; `delete` needs only file and expected_sha256. Existing files always require their current hash. A missing/null hash requires an absent file. Each path appears once per batch; limits are 20 MB per file and 50 MB total before/after data. Created files become visible in `show_diff` and the reviewed publish. For binary diffs, inspect the asset itself as needed; the review ID binds its bytes.
+
+The result includes `checkpoint` and final hashes. `undo_batch` restores only an uncommitted batch whose affected files and Git index remain unchanged. It is not a revert of a published commit. Sequential batches can be undone in reverse order. Checkpoints contain source backups and belong only in the local `.git` directory.
+
+MCP operations share a checkout lock at `.git/overleaf-skill.lock`. A busy operation returns PROJECT_BUSY. After an interrupted process, verify the recorded PID is gone before removing its lock. External editors/Git and Overleaf collaborators do not honor this lock; avoid concurrent outside writes. The CLI compile command honors the same lock. Individual file writes use replacement, but batches and undo are not atomic across a machine crash.
 
 ## Compilation semantics
 
 Local compilation uses Tectonic with `--untrusted`, stores artifacts under `.git/overleaf-mcp-build`, and removes the previous PDF before invocation. Its package environment can differ from Overleaf. Timeout/error does not yield a successful PDF.
 
-Cloud compilation requires a clean checkout whose Git HEAD matches the fetched upstream. It fetches a source ZIP before and after compilation, uses the CSRF-protected compile endpoint with stop-on-first-error, and downloads only returned build-scoped output URLs on `www.overleaf.com`. Each attempt gets a unique artifact directory `.git/overleaf-online-builds/<run_id>`.
+Cloud compilation requires a clean checkout whose Git HEAD matches the fetched upstream. Before invoking the compiler it compares every path/hash in a cloud source ZIP against committed Git blobs; `CLOUD_SOURCE_MISMATCH` stops the attempt. Known text types normalize CRLF to LF; binary assets compare exact bytes. It checks another source ZIP after compilation, uses the CSRF-protected compile endpoint with stop-on-first-error, and downloads only returned build-scoped output URLs on `www.overleaf.com`. Each attempt gets a unique artifact directory `.git/overleaf-online-builds/<run_id>`.
 
 Cloud success requires status success, matching before/after source snapshots, a log without detected fatal errors, and a PDF header. Warnings may remain; inspect full_log for diagnostics beyond the returned tail. This is conservative log screening, not a complete TeX parser or a visual layout review.
 
-`source_verified_against_git` is always false: equal Git heads do not prove the website compiler consumed identical source. Archive snapshots do not exclude a transient edit during compilation that is later reverted. Report this accurately when discussing reproducibility. Live collaboration is not locked.
+`source_verified_against_git` is true only when both snapshots match the expected Git source. Receipts include `git_commit`, diagnostics and artifact paths. Archive checks do not exclude a transient edit during compilation that is later reverted. Report this accurately when discussing reproducibility. Live collaboration is not locked.
+
+For long compiles, call `start_online_compile` then poll `compile_status` at reasonable intervals. `completed` means the job returned a result; inspect `result.success` to determine compilation success. Handles last only for the current MCP process and return `unknown` after restart; completed receipts remain on disk. Killing the process may interrupt a job. Concurrent jobs for the same checkout fail or are refused by its lock; no automatic retries/cancellation are provided.
+
+`diagnostics` includes detected file/line errors and warnings, plus the full log path. Missing cite/input checks and log parsing are heuristics; they do not expand TeX macros or establish citation authenticity.
 
 The tools return local paths, not public download URLs. Link/copy the requested artifact to the user's delivery location; do not add build outputs to source control by default.

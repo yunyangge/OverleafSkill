@@ -47,7 +47,7 @@ python install_skill.py
 
 macOS 可将 `python` 换为 `python3`，Windows 可使用 `py -3.10`。Conda 用户可使用 `conda run -n py310 python ...`。Windows 核心功能只依赖标准库；macOS 的在线会话存储额外使用 Keychain 依赖。
 
-默认安装到 `$CODEX_HOME/skills/overleaf`，未设置时为 `~/.codex/skills/overleaf`。安装器不会覆盖已有 skill；其他兼容 Agent 可用 `--dest` 指定其技能目录。
+默认安装到 `$CODEX_HOME/skills/overleaf`，未设置时为 `~/.codex/skills/overleaf`。已有版本使用 `python install_skill.py --upgrade`，安装器会保留旧版本备份；其他兼容 Agent 可用 `--dest` 指定其技能目录。
 
 ### 2. 连接你的项目
 
@@ -58,7 +58,7 @@ macOS 可将 `python` 换为 `python3`，Windows 可使用 `py -3.10`。Conda �
 项目地址：https://www.overleaf.com/project/你的项目ID
 ```
 
-**安装 skill 不等于连接账号或注册 MCP。** 后续需要完成 Git 认证、项目配置和客户端注册；在线编译还需单独导入网页登录会话。凭据只在本机输入，不要发送到聊天中。
+**安装 skill 不等于连接账号或注册 MCP。** 后续需要完成 Git 认证、项目配置和客户端注册；在线编译还需单独网页登录，可用可选的 `browser-login` 打开独立浏览器，或通过隐藏输入导入会话。凭据只在本机输入，不要发送到聊天中。
 
 [完整配置指南（英文）](skills/overleaf/references/setup.md)覆盖 Windows/macOS、多个项目、代理、Codex 注册和通用 MCP 配置。其他 MCP 客户端可以使用生成的配置，但仍需按客户端要求调整外层格式。
 
@@ -71,7 +71,7 @@ python scripts/manage.py --profile paper doctor
 python scripts/manage.py --profile paper auth-status
 ```
 
-`doctor` 检查本地 MCP 和文件访问；`auth-status` 检查网页登录。要复现固定代码版本，可在安装前执行 `git checkout v1.0.0`。
+`doctor` 检查本地 MCP 和文件访问；`auth-status` 检查网页登录。要复现固定代码版本，可在安装前执行 `git checkout v1.1.0`。
 
 ## 你可以这样使用
 
@@ -81,6 +81,8 @@ python scripts/manage.py --profile paper auth-status
 | 发布并编译 | “把确认过的修改同步到 Overleaf，在线编译并返回 PDF 和错误日志。” |
 | 保存 GitHub 副本 | “将当前已提交版本同步到我指定的 GitHub 私有仓库。” |
 | 换一台电脑 | “用 $overleaf 在这台 Mac 上重建连接，使用独立工作副本。” |
+| 批量修改与撤销 | “一起修改这几个章节并添加新图片，保留检查点，先展示差异。” |
+| 定位问题 | “检查缺失引用和子文件，异步在线编译，告诉我错误位置。” |
 
 助手仍负责理解你的修改意图；skill 规定操作流程，MCP 执行文件、同步和编译操作。
 
@@ -95,6 +97,14 @@ python scripts/manage.py --profile paper auth-status
 | GitHub 同步 | `sync_github` | 推送已提交版本，不强制覆盖远端 |
 | 本地编译 | `compile_project` | 使用可选的 Tectonic，返回日志和 PDF |
 | 在线编译 | `online_auth_status`、`compile_overleaf` | 检查会话，使用 Overleaf 编译并下载本次构建的产物 |
+| 批量修改与撤销 | `batch_edit`、`undo_batch` | 预检查、失败回滚、检查点撤销；支持新增、替换和删除文件 |
+| 图片等二进制资源 | `file_info`、`batch_edit` | 获取文件哈希、Base64 写入，通过 Git 审阅后发布 |
+| 推送恢复 | `retry_publish` | 重试已提交版本；远端已存在时直接成功，分叉时停止 |
+| 项目概览 | `project_status` | 本地修改、远端领先/落后、会话状态、最近编译记录 |
+| 搜索与引用检查 | `search_project`、`check_references` | 带行号搜索、缺失引用键和 input/include 文件检查 |
+| 异步编译 | `start_online_compile`、`compile_status` | 立即返回任务 ID，可轮询结果与结构化诊断 |
+
+**v1.1 共 19 个 MCP 工具。** 在线编译前后都会将云端源文件与 Git 提交比对；不一致时停止或将本次结果标为失败。各 MCP 进程使用同一项目锁，减少并发操作冲突。安装器支持备份升级与回退，项目元数据可导出后在另一台电脑重新认证连接。
 
 输入参数、错误恢复和编译结果含义见[工具契约（英文）](skills/overleaf/references/workflow.md)。
 
@@ -127,7 +137,7 @@ flowchart LR
 
 [查看 CI](https://github.com/yunyangge/OverleafSkill/actions/workflows/test.yml) · [详细验证记录（英文）](VALIDATION.md)
 
-在线编译依赖 Overleaf 内部网页接口，未来可能需要适配。编译前后会比较云端源码快照，但不能证明它与某个 Git 提交完全一致，也不能排除编译期间发生后又恢复的编辑。当前不支持项目/文件创建、二进制上传、审阅批注或自动后台双向同步。
+在线编译依赖 Overleaf 内部网页接口，未来可能需要适配。Git 比对针对编译前后的快照（已知文本类型统一换行符），不能排除编译期间发生后又恢复的协作编辑。批量修改支持普通异常回滚，但不保证断电时多个文件原子更新；项目锁也不约束外部编辑器或网页协作者。引用检查是静态启发式。当前不支持创建 Overleaf 项目、网页审阅批注或自动后台双向同步。浏览器交互登录已做模拟测试，尚未完成双平台真实账号验证。
 
 ## 仓库导航
 
@@ -159,7 +169,9 @@ OverleafSkill/
 
 **会自动推送吗？** 修改默认留在本地，发布和 GitHub 同步是独立操作，按你的授权执行。
 
-**更新源码后，已安装 skill 会自动更新吗？** 不会。安装器使用复制方式且拒绝覆盖；先检查并备份已安装版本，再替换，必要时重新注册 MCP。项目配置和凭据保存在 skill 目录之外。
+**更新源码后，已安装 skill 会自动更新吗？** 不会。运行 `python install_skill.py --upgrade`，旧版本会保存到输出中的备份目录；用 `--restore 备份目录` 回退。升级后重启 MCP；若注册仍指向其他代码目录，需更新注册路径。项目配置和凭据保存在 skill 目录之外。
+
+**如何迁移到另一台电脑？** 使用 `export-profile` 导出项目标识，在目标电脑用 `import-profile` 指定新的本地目录，再完成 Git/网页登录与 MCP 注册。凭据不会导出，GitHub 远端和本地编译器按新机器重新配置。详见[升级与迁移](skills/overleaf/references/setup.md#upgrade-rollback-and-migration)。
 
 ## 开发与贡献
 

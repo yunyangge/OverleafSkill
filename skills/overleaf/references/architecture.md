@@ -6,6 +6,10 @@
 - `online.py`: website CSRF, bounded HTTPS requests with redirects disabled, source ZIP fingerprints, build-specific output validation, compilation receipts.
 - `credentials.py`: Windows current-user DPAPI or explicitly selected macOS Keychain backend; no token in command arguments and no plaintext fallback.
 - `manage.py`: portable setup, session import, generic client configuration, optional Codex registration, diagnosis, GitHub remote setup.
+- `features.py`: checkout locks, recoverable batches/checkpoints, push retries, status/search/reference helpers and asynchronous compile handles.
+- `browser_login.py`: optional isolated interactive Playwright login; credential storage is delegated to credentials.py.
+- `migration.py`: versioned project-ID-only manifests; no credential or machine-path export.
+- Root `install_skill.py`: staged install, upgrade backup and restore; does not alter project state.
 
 Git credentials remain with Git's configured credential helper. Website cookies stay in OS storage. Both source checkouts and generated configuration belong outside this skill's distributable files. GitHub is a second remote, not Overleaf's built-in GitHub OAuth integration.
 
@@ -21,7 +25,9 @@ Tests use temporary local bare Git remotes and fake cloud responses. Windows DPA
 
 ## Current exclusions and extension points
 
-No comments/review panel, project CRUD, binary uploads, SSH Overleaf remote, automatic browser login, HTTP MCP transport, cross-process locking, or automatic two-way background sync. Multi-project support is separate process/profile per checkout.
+No comments/review panel, Overleaf project creation/deletion, SSH Overleaf remote, HTTP MCP transport, or automatic two-way background sync. Project files and binary assets can be created/replaced/deleted through reviewed Git publication. Browser login remains user-interactive. Multi-project support is separate process/profile per checkout.
+
+Batch checkpoints and completed compilation receipts persist under `.git`; asynchronous job handles are process-local. Checkout locks coordinate this implementation's MCP processes and CLI compilation, not external editors or cloud collaboration. Batch rollback handles ordinary exceptions; recovery from power loss/interrupted writes requires inspecting the local checkpoint. No distributed transaction or compiler-source lock is claimed.
 
 For additional tools, change both descriptor and dispatch mapping, validate arguments, and test observable outcomes. Keep stdout reserved for JSON-RPC. Expensive operations need a bounded timeout. Avoid force push, destructive rollback, or treating an existing PDF as evidence of a successful new build.
 

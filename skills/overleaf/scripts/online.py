@@ -49,6 +49,23 @@ def output_url(project, value):
     return url
 
 
+def source_hash(name, data):
+    if Path(name).suffix.lower() in ('.tex', '.bib', '.sty', '.cls', '.bst', '.md', '.txt', '.json'):
+        data = data.replace(b'\r\n', b'\n')
+    return hashlib.sha256(data).hexdigest()
+
+
+def diagnostics(log):
+    entries = []
+    for line in log.splitlines():
+        match = re.match(r'(.+?):(\d+):\s*(.+)', line)
+        if match:
+            entries.append({'file': match[1], 'line': int(match[2]), 'message': match[3], 'level': 'error' if 'error' in match[3].lower() else 'info'})
+        elif line.startswith('!') or 'Warning:' in line or line.startswith(('Overfull ', 'Underfull ')):
+            entries.append({'file': None, 'line': None, 'message': line, 'level': 'error' if line.startswith('!') else 'warning'})
+    return entries[:500]
+
+
 def archive_snapshot(data):
     snapshot = {}
     with zipfile.ZipFile(io.BytesIO(data)) as archive:
@@ -58,7 +75,7 @@ def archive_snapshot(data):
             if not item.is_dir():
                 if item.filename in snapshot:
                     raise ValueError("Duplicate archive path")
-                snapshot[item.filename] = hashlib.sha256(archive.read(item)).hexdigest()
+                snapshot[item.filename] = source_hash(item.filename, archive.read(item))
     return snapshot
 
 
@@ -105,9 +122,12 @@ class Online:
             raise RuntimeError("LOGIN_REQUIRED_OR_CHALLENGE: could not obtain a website CSRF token")
         return parser.token
 
-    def compile(self, destination):
+    def compile(self, destination, expected=None):
         csrf = self.csrf()
         before = archive_snapshot(self.request(f"/project/{self.project}/download/zip"))
+        if expected is not None and before != expected:
+            differing = sorted(k for k in set(before) | set(expected) if before.get(k) != expected.get(k))
+            raise RuntimeError('CLOUD_SOURCE_MISMATCH: compile not started; differing paths: ' + ', '.join(differing[:30]))
         response = json.loads(self.request(f"/project/{self.project}/compile?file_line_errors=true",
                                           {"stopOnFirstError": True}, csrf=csrf))
         status = response.get("status")
@@ -142,9 +162,9 @@ class Online:
         has_error = bool(re.search(r"(?m)^!|^.+:\d+: (?:LaTeX |Package .+ )?Error|Fatal error occurred", log))
         success = status == "success" and stable and "output.log" in downloaded and "output.pdf" in downloaded and not has_error
         result = {"mode": "overleaf_online", "run_id": run_id, "status": status, "success": success,
-                  "source_stable_before_after": stable, "source_verified_against_git": False,
-                  "note": "Compiles the cloud project. Before/after source snapshots match only when source_stable_before_after is true; this does not prove equality with a Git commit or rule out edits during compilation.",
-                  "log": log[-40000:], "log_truncated": len(log) > 40000,
+                  "source_stable_before_after": stable, "source_verified_against_git": expected is not None and before == expected and after == expected,
+                  "note": "Verification compares cloud snapshots with Git blobs (CRLF normalized for known text types). It does not lock collaborators or exclude transient edits during compilation.",
+                  "diagnostics": diagnostics(log), "log": log[-40000:], "log_truncated": len(log) > 40000,
                   "full_log": str(target / "output.log") if "output.log" in downloaded else None,
                   "pdf": str(target / "output.pdf") if success else None}
         (target / "receipt.json").write_text(json.dumps(result, ensure_ascii=False, indent=2), encoding="utf-8")

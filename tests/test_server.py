@@ -102,7 +102,7 @@ class Tests(unittest.TestCase):
         self.assertEqual(proc.returncode, 0, proc.stderr)
         replies = [json.loads(line) for line in proc.stdout.splitlines()]
         self.assertEqual(len(replies), 3)
-        self.assertEqual(len(replies[1]["result"]["tools"]), 10)
+        self.assertEqual(len(replies[1]["result"]["tools"]), 19)
         self.assertIn("sha256", replies[2]["result"]["content"][0]["text"])
 
     def test_github_refuses_dirty_and_stale(self):
