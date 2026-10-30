@@ -26,7 +26,7 @@ Update a paper, inspect the diff, publish to Overleaf, compile online, and sync 
 - [Quick start](#quick-start)
 - [Example requests](#example-requests)
 - [Capabilities and tools](#capabilities-and-tools)
-- [Brief summaries for substantive changes](#brief-summaries-for-substantive-changes)
+- [Summaries that scale with the changes](#summaries-that-scale-with-the-changes)
 - [How it works](#how-it-works)
 - [Platforms and validation](#platforms-and-validation)
 - [Repository guide](#repository-guide)
@@ -72,7 +72,7 @@ python scripts/manage.py --profile paper doctor
 python scripts/manage.py --profile paper auth-status
 ```
 
-`doctor` checks local MCP and file access; `auth-status` checks the website session. To reproduce a fixed code version, run `git checkout v1.3.0` before installation.
+`doctor` checks local MCP and file access; `auth-status` checks the website session. To reproduce a fixed code version, run `git checkout v1.3.1` before installation.
 
 ## Example requests
 
@@ -109,13 +109,13 @@ The assistant interprets the requested edits; the skill guides the workflow and 
 
 See the [tool contract](skills/overleaf/references/workflow.md) for parameters, recovery and result semantics.
 
-## Brief summaries for substantive changes
+## Summaries that scale with the changes
 
-After each editing round, the assistant gives brief summaries grouped by section, paragraph or purpose: **where, what changed, and why**. Describe effects on claims, values or citations when relevant; combine minor grammar/punctuation fixes. Significance depends on content, not line counts.
+After each editing round, the assistant starts with a coherent paragraph explaining **the main changes, how they relate, and why they were made**. Larger revisions receive more detail across several paragraphs, grouped by theme or section when helpful. There is no fixed sentence count or mandatory entry for each edit. Describe effects on claims, values or citations when relevant; combine minor grammar/punctuation fixes.
 
 ![Change summaries appear first; line diffs are collapsed by default](assets/review-preview.png)
 
-- One or two sentences per substantive change, readable directly in chat.
+- A complete paragraph by default, with more paragraphs for substantial or cross-section revisions, readable directly in chat.
 - The assistant saves its summaries with the edit; no extra model service or scripted inference of intent.
 - Line diffs stay collapsed until needed; expand comparisons or download before/after text.
 - Separate snapshots survive subsequent edits and commits; `show_diff` explicitly labels its cumulative scope.

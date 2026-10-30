@@ -57,7 +57,8 @@ class Tests(unittest.TestCase):
 
     def test_summaries_persist_and_diffs_start_collapsed(self):
         original = self.project.read('main.tex')
-        notes = [{'files':['main.tex'],'location':'Intro <section>','summary':'Clarify <script>context</script>.'}]
+        notes = [{'files':['main.tex'],'location':'Intro <section>',
+                  'summary':'Clarify <script>context</script>.\n\n' + 'Explain the related changes and their purpose. ' * 40}]
         result = self.project.patch('main.tex',original['sha256'],'Hello','Saved',summaries=json.dumps(notes))
         report = result['review']
         html = Path(report['html']).read_text(encoding='utf-8')

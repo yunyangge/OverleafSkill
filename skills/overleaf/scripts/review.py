@@ -89,8 +89,9 @@ def parse_summaries(value, files):
         if not isinstance(item['files'], list) or not item['files'] or any(not isinstance(f, str) or f not in files for f in item['files']):
             raise ValueError('Summary files must belong to this edit/review')
         for key in ('location', 'summary'):
-            if not isinstance(item[key], str) or not item[key].strip() or len(item[key]) > 1500:
-                raise ValueError('Summary location/text must contain 1-1500 characters')
+            limit = 1500 if key == 'location' else 12000
+            if not isinstance(item[key], str) or not item[key].strip() or len(item[key]) > limit:
+                raise ValueError(f'{key} must contain 1-{limit} characters')
     return items
 
 

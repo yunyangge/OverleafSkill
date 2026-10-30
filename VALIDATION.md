@@ -2,6 +2,10 @@
 
 ## 2026-10-30
 
+### v1.3.1 adaptive paragraph summaries
+
+- Skill and MCP instructions default to a coherent paragraph, expanding with revision scope rather than imposing sentence counts. Summary payloads accept up to 12,000 characters; the location limit is unchanged. Review tests exercise longer, multi-paragraph text through validation, JSON persistence and escaped HTML rendering.
+
 ### v1.3 content summaries
 
 - Optional structured, agent-authored summaries are persisted with patch/batch/cumulative reviews and displayed before collapsed file diffs. Tests cover escaped notes, persistence, stable content review IDs and malformed/out-of-scope notes rejected before edits.
