@@ -1,5 +1,7 @@
 <div align="center">
 
+<img src="assets/overleafskill-logo.png" alt="OverleafSkill logo: a paper sheet, leaf and version branch" width="140">
+
 # OverleafSkill
 
 **Let your AI assistant edit, sync, and compile your Overleaf project.**
@@ -11,6 +13,11 @@
 Windows · macOS · Python 3.10+ · Skill + MCP
 
 </div>
+
+<p align="center">
+  <img src="assets/overleafskill-hero.png" alt="OverleafSkill workflow: edit LaTeX, review diffs, sync Overleaf and GitHub, compile a PDF" width="100%">
+  <br><sub>Edit → Review → Sync → Compile · Windows and macOS</sub>
+</p>
 
 Update a paper, inspect the diff, publish to Overleaf, compile online, and sync the reviewed version to GitHub. OverleafSkill packages this workflow as an installable skill and a reproducible local MCP server. Use your existing assistant; no additional model API key is required.
 
@@ -127,6 +134,7 @@ Online compilation uses internal website endpoints that may change. Before/after
 ```text
 OverleafSkill/
 ├── README.md / README.en.md       Chinese and English home pages
+├── assets/                       Logo, hero and generation notes
 ├── install_skill.py              Skill installer
 ├── requirements.txt              Platform dependencies
 ├── skills/overleaf/

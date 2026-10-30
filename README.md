@@ -1,5 +1,7 @@
 <div align="center">
 
+<img src="assets/overleafskill-logo.png" alt="OverleafSkill 标志：纸页、绿叶与版本分支" width="140">
+
 # OverleafSkill
 
 **让 AI 在你的 Overleaf 项目中完成修改、同步与编译。**
@@ -11,6 +13,11 @@
 Windows · macOS · Python 3.10+ · Skill + MCP
 
 </div>
+
+<p align="center">
+  <img src="assets/overleafskill-hero.png" alt="OverleafSkill 工作流：编辑 LaTeX、审阅差异、同步 Overleaf 与 GitHub、编译 PDF" width="100%">
+  <br><sub>编辑 → 审阅 → 同步 → 编译 · 支持 Windows 与 macOS</sub>
+</p>
 
 实验结果更新后，你可以让助手修改论文中的相应段落，先查看差异，再同步到 Overleaf、在线编译，并将确认后的版本推送到 GitHub。OverleafSkill 把这套流程整理成可安装的 skill 和可复现的本地 MCP 服务，使用你已有的 AI 助手，无需额外的模型 API Key。
 
@@ -127,6 +134,7 @@ flowchart LR
 ```text
 OverleafSkill/
 ├── README.md / README.en.md       中英文项目首页
+├── assets/                       Logo、首页展示图及生成说明
 ├── install_skill.py              skill 安装器
 ├── requirements.txt              平台依赖
 ├── skills/overleaf/
