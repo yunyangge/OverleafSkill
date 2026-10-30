@@ -8,6 +8,11 @@ import credentials
 
 
 class Tests(unittest.TestCase):
+    @unittest.skipUnless(sys.platform == "darwin", "macOS native backend import")
+    def test_mac_backend_available(self):
+        backend = credentials.keychain()
+        self.assertEqual(type(backend).__module__, "keyring.backends.macOS")
+
     def test_mac_native_backend_routing(self):
         backend = Mock()
         backend.get_password.return_value = "session=test"
